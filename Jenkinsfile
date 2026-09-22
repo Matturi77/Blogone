@@ -30,7 +30,7 @@ pipeline {
 
         stage('Nikto') {
             steps {
-                sh 'docker run --rm --network host sullo/nikto:latest -h http://127.0.0.1:3000 || true'
+                sh 'docker run --rm --network host hackllc/nikto:latest -h http://127.0.0.1:3000 || true'
             }
         }
     }
