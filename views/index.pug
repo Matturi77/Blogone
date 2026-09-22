@@ -1,0 +1,8 @@
+extends layout
+
+block content
+  h1= title
+  a(href='/new-post') New Post
+  each post in posts
+    h2= post.title
+    p= post.content

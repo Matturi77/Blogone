@@ -1,0 +1,10 @@
+extends layout
+
+block content
+  h1 New Post
+  form(action='/new-post', method='post')
+    label(for='title') Title:
+    input(type='text', name='title', required)
+    label(for='content') Content:
+    textarea(name='content', required)
+    button(type='submit') Submit

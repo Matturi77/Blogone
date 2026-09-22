@@ -1,0 +1,23 @@
+doctype html
+html
+  head
+    title= title
+    link(rel='stylesheet', href='/stylesheets/style.css')
+    meta(name='viewport', content='width=device-width, initial-scale=1')
+  body
+    header
+      nav
+        ul
+          li: a(href='/') Home
+          if user
+            li: a(href='/new-post') New Post
+            if user.username === 'admin'
+              li: a(href='/admin') Admin
+            li: a(href='/auth/logout') Logout
+          else
+            li: a(href='/auth/login') Login
+            li: a(href='/auth/register') Register
+    main
+      block content
+    footer
+      p © 2024 My Blog
