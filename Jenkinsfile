@@ -24,6 +24,13 @@ pipeline {
                 sh 'docker stop blog || true'
                 sh 'docker rm blog || true'
                 sh 'docker run -d -p 3000:3000 --name blog blog'
+                sleep 5
+            }
+        }
+
+        stage('Nikto') {
+            steps {
+                sh 'docker run --rm --network host sullo/nikto:latest -h http://127.0.0.1:3000 || true'
             }
         }
     }
