@@ -10,7 +10,7 @@ pipeline {
         stage('OWASP Dependency-Check') {
             steps {
                 dependencyCheck additionalArguments: '--scan ./ --format ALL --prettyPrint', 
-                                odcInstallation: 'Default'
+                                odcInstallation: 'default'
             }
             post {
                 always {
