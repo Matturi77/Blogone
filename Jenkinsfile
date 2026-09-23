@@ -6,6 +6,18 @@ pipeline {
                 sh 'git pull origin main'
             }
         }
+
+        stage('OWASP Dependency-Check') {
+            steps {
+                dependencyCheck additionalArguments: '--scan ./ --format ALL --prettyPrint', 
+                                odcInstallation: 'Default'
+            }
+            post {
+                always {
+                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                }
+            }
+        }
         
         stage('Build') {
             steps {
