@@ -6,9 +6,7 @@ describe('Blog Application Unit & Integration Tests', () => {
 
   beforeAll((done) => {
     db.serialize(() => {
-      // Ensure records are clean for tests
       db.run("DELETE FROM users WHERE username IN ('testuser', 'admin')", () => {
-        // Match exact database.js schema: (username, password, sessionId)
         db.run("INSERT INTO users (username, password, sessionId) VALUES ('testuser', 'password123', 'valid-test-session')", () => {
           db.run("INSERT INTO users (username, password, sessionId) VALUES ('admin', 'adminpass', 'admin-test-session')", done);
         });
@@ -20,26 +18,25 @@ describe('Blog Application Unit & Integration Tests', () => {
     db.close(done);
   });
 
-  // ==========================================
-  // MANUALLY GENERATED TESTS (Tests 1 - 5)
-  // Baseline authentication & routing contracts
-  // ==========================================
+  // Unauthenticated access
 
-  // Test 1: Unauthenticated root access
+  // Root route
+  // GET /
   test('1. GET / - Should redirect (302) unauthenticated users to /auth/login', async () => {
     const res = await request(app).get('/');
     expect(res.statusCode).toBe(302);
     expect(res.headers.location).toBe('/auth/login');
   });
 
-  // Test 2: Unauthenticated new-post view
+  
+  // GET /new-post
   test('2. GET /new-post - Should redirect (302) to /auth/login without session cookie', async () => {
     const res = await request(app).get('/new-post');
     expect(res.statusCode).toBe(302);
     expect(res.headers.location).toBe('/auth/login');
   });
 
-  // Test 3: Unauthenticated post creation
+  // POST /new-post
   test('3. POST /new-post - Should reject unauthenticated post creation with 302 redirect', async () => {
     const res = await request(app)
       .post('/new-post')
@@ -49,25 +46,25 @@ describe('Blog Application Unit & Integration Tests', () => {
     expect(res.headers.location).toBe('/auth/login');
   });
 
-  // Test 4: Anonymous admin route protection
+
+
+  // Unauthenticated admin user request
+  // GET /admin
   test('4. GET /admin - Should return 403 Forbidden for unauthenticated users', async () => {
     const res = await request(app).get('/admin');
     expect(res.statusCode).toBe(403);
     expect(res.text).toContain('Access denied');
   });
 
-  // Test 5: Handling unknown routes
-  test('5. GET /non-existent-route - Should return 404 for unknown endpoints', async () => {
-    const res = await request(app).get('/non-existent-endpoint-xyz');
+  // Unknown routes
+  test('5. GET /unknown - Should return 404 for unknown endpoints', async () => {
+    const res = await request(app).get('/unknown');
     expect(res.statusCode).toBe(404);
   });
 
-  // ==========================================
-  // AUTOMATICALLY GENERATED TESTS (Tests 6 - 10)
-  // Session authorization, data insertion & RBAC
-  // ==========================================
 
-  // Test 6: Authenticated root access
+
+  // Authenticated root access
   test('6. GET / - Should return 200 OK and render HTML when valid session cookie is provided', async () => {
     const res = await request(app)
       .get('/')
@@ -75,7 +72,7 @@ describe('Blog Application Unit & Integration Tests', () => {
     expect(res.statusCode).toBe(200);
   });
 
-  // Test 7: Authenticated new-post access
+  // Authenticated new-post access
   test('7. GET /new-post - Should return 200 OK when authenticated with valid session', async () => {
     const res = await request(app)
       .get('/new-post')
@@ -83,7 +80,7 @@ describe('Blog Application Unit & Integration Tests', () => {
     expect(res.statusCode).toBe(200);
   });
 
-  // Test 8: Authenticated post creation
+  // Authenticated post creation
   test('8. POST /new-post - Should create post and redirect (302) to / when authenticated', async () => {
     const res = await request(app)
       .post('/new-post')
@@ -95,7 +92,9 @@ describe('Blog Application Unit & Integration Tests', () => {
     expect(res.headers.location).toBe('/');
   });
 
-  // Test 9: Role-based access control (non-admin user)
+  // Role-based access control
+
+  // normal user
   test('9. GET /admin - Should return 403 when authenticated as a non-admin user', async () => {
     const res = await request(app)
       .get('/admin')
@@ -104,7 +103,7 @@ describe('Blog Application Unit & Integration Tests', () => {
     expect(res.text).toContain('Access denied');
   });
 
-  // Test 10: Role-based access control (admin user)
+  // admin user
   test('10. GET /admin - Should return 200 OK when authenticated as admin', async () => {
     const res = await request(app)
       .get('/admin')
