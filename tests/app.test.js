@@ -57,14 +57,16 @@ describe('Blog Application Unit & Integration Tests', () => {
   });
 
   // Unknown routes
-  test('5. GET /unknown - Should return 404 for unknown endpoints', async () => {
+  test('5. GET /unknown - Should return 404 for unknown routes', async () => {
     const res = await request(app).get('/unknown');
     expect(res.statusCode).toBe(404);
   });
 
 
+  // Authenticated access
 
-  // Authenticated root access
+  // Root route
+  // GET /
   test('6. GET / - Should return 200 OK and render HTML when valid session cookie is provided', async () => {
     const res = await request(app)
       .get('/')
@@ -72,7 +74,7 @@ describe('Blog Application Unit & Integration Tests', () => {
     expect(res.statusCode).toBe(200);
   });
 
-  // Authenticated new-post access
+  // GET /new-post
   test('7. GET /new-post - Should return 200 OK when authenticated with valid session', async () => {
     const res = await request(app)
       .get('/new-post')
@@ -80,7 +82,7 @@ describe('Blog Application Unit & Integration Tests', () => {
     expect(res.statusCode).toBe(200);
   });
 
-  // Authenticated post creation
+  // POST /new-post
   test('8. POST /new-post - Should create post and redirect (302) to / when authenticated', async () => {
     const res = await request(app)
       .post('/new-post')
