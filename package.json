@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "test": "jest --detectOpenHandles --forceExit"
+    "test": "jest --detectOpenHandles --forceExit --ci --reporters=default --reporters=jest-junit"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
@@ -18,6 +18,11 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
+    "jest-junit": "^16.0.0",
     "supertest": "^7.0.0"
-}
+  },
+  "jest-junit": {
+    "outputDirectory": "./reports",
+    "outputName": "junit.xml"
+  }
 }
