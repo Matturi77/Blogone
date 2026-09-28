@@ -1,102 +1,116 @@
 const request = require('supertest');
-const app = require('../app'); // adjust path if your server file is in root or src/
+const app = require('../app');
+const db = require('../database');
 
-describe('Blog API Unit & Integration Tests', () => {
+describe('Blog Application Unit & Integration Tests', () => {
+
+  // Seed a valid user and an admin user for session tests
+  beforeAll((done) => {
+    db.serialize(() => {
+      db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, sessionId TEXT)");
+      db.run("CREATE TABLE IF NOT EXISTS posts (id INTEGER PRIMARY KEY, title TEXT, content TEXT)");
+      db.run("INSERT OR REPLACE INTO users (id, username, sessionId) VALUES (101, 'testuser', 'valid-test-session')");
+      db.run("INSERT OR REPLACE INTO users (id, username, sessionId) VALUES (102, 'admin', 'admin-test-session')", done);
+    });
+  });
+
+  afterAll((done) => {
+    db.close(done);
+  });
 
   // ==========================================
   // MANUALLY GENERATED TESTS (Tests 1 - 5)
+  // Focused on core authentication guardrails & base routing
   // ==========================================
 
-  // Test 1: Health / root endpoint status check
-  test('1. GET / - Should return 200 OK and serve home page', async () => {
+  // Test 1: Root redirect when unauthenticated
+  test('1. GET / - Should redirect (302) unauthenticated users to /auth/login', async () => {
     const res = await request(app).get('/');
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe('/auth/login');
   });
 
-  // Test 2: Fetch all blog posts
-  test('2. GET /posts - Should return list of posts with status 200', async () => {
-    const res = await request(app).get('/posts');
-    expect(res.statusCode).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+  // Test 2: Protected route redirection (/new-post)
+  test('2. GET /new-post - Should redirect (302) to /auth/login without session cookie', async () => {
+    const res = await request(app).get('/new-post');
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe('/auth/login');
   });
 
-  // Test 3: Input validation - rejecting post without title
-  test('3. POST /posts - Should return 400 when title is missing', async () => {
-    const newPost = { content: 'Post content without title', author: 'Tester' };
+  // Test 3: Unauthorized post submission
+  test('3. POST /new-post - Should reject unauthenticated post creation with 302 redirect', async () => {
     const res = await request(app)
-      .post('/posts')
-      .send(newPost);
-    expect(res.statusCode).toBe(400);
+      .post('/new-post')
+      .type('form')
+      .send({ title: 'Unauthorized Post', content: 'Should not create' });
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe('/auth/login');
   });
 
-  // Test 4: Handling non-existent resources
-  test('4. GET /posts/999999 - Should return 404 for unknown post ID', async () => {
-    const res = await request(app).get('/posts/999999');
+  // Test 4: Role-based access control (Admin route - Anonymous)
+  test('4. GET /admin - Should return 403 Forbidden for unauthenticated users', async () => {
+    const res = await request(app).get('/admin');
+    expect(res.statusCode).toBe(403);
+    expect(res.text).toContain('Access denied');
+  });
+
+  // Test 5: Handling unknown routes
+  test('5. GET /non-existent-route - Should return 404 for unknown endpoints', async () => {
+    const res = await request(app).get('/does-not-exist');
     expect(res.statusCode).toBe(404);
-  });
-
-  // Test 5: Verify response headers
-  test('5. GET /posts - Should return application/json content-type', async () => {
-    const res = await request(app).get('/posts');
-    expect(res.headers['content-type']).toMatch(/json/);
   });
 
 
   // ==========================================
   // AUTOMATICALLY GENERATED TESTS (Tests 6 - 10)
-  // (Prompted via AI / Copilot and reviewed)
+  // Focused on session verification, creation flow, and authorization edge cases
   // ==========================================
 
-  // Test 6: Successful post creation
-  test('6. POST /posts - Should successfully create a post and return 201 Created', async () => {
-    const validPost = {
-      title: 'Automated Test Title',
-      content: 'Automated test content body',
-      author: 'Jest Runner'
-    };
+  // Test 6: Authenticated access to root view
+  test('6. GET / - Should return 200 OK and render HTML when valid session cookie is provided', async () => {
     const res = await request(app)
-      .post('/posts')
-      .send(validPost);
-
-    expect(res.statusCode).toBe(201);
-    expect(res.body).toHaveProperty('id');
-    expect(res.body.title).toBe(validPost.title);
-  });
-
-  // Test 7: Prevent empty JSON payloads
-  test('7. POST /posts - Should return 400 when body payload is completely empty', async () => {
-    const res = await request(app)
-      .post('/posts')
-      .send({});
-    expect(res.statusCode).toBe(400);
-  });
-
-  // Test 8: Fetch post by specific ID
-  test('8. GET /posts/:id - Should retrieve single post matching requested ID', async () => {
-    // Create an entry first to guarantee ID presence
-    const created = await request(app)
-      .post('/posts')
-      .send({ title: 'Fetch Me', content: 'Testing single fetch', author: 'Author' });
-    
-    const res = await request(app).get(`/posts/${created.body.id}`);
+      .get('/')
+      .set('Cookie', ['sessionId=valid-test-session']);
     expect(res.statusCode).toBe(200);
-    expect(res.body.id).toBe(created.body.id);
+    expect(res.headers['content-type']).toMatch(/html/);
   });
 
-  // Test 9: Handling invalid / malformed ID parameters
-  test('9. GET /posts/invalid-id-string - Should handle non-numeric or malformed ID with 400/404', async () => {
-    const res = await request(app).get('/posts/invalid-id-format');
-    expect([400, 404]).toContain(res.statusCode);
+  // Test 7: Authenticated access to new-post view
+  test('7. GET /new-post - Should return 200 OK when authenticated with valid session', async () => {
+    const res = await request(app)
+      .get('/new-post')
+      .set('Cookie', ['sessionId=valid-test-session']);
+    expect(res.statusCode).toBe(200);
   });
 
-  // Test 10: Delete operation
-  test('10. DELETE /posts/:id - Should delete post and return 200 or 204 status', async () => {
-    const created = await request(app)
-      .post('/posts')
-      .send({ title: 'Delete Me', content: 'Temporary content', author: 'Author' });
+  // Test 8: Successful post creation with session cookie and urlencoded payload
+  test('8. POST /new-post - Should create post and redirect (302) to / when authenticated', async () => {
+    const res = await request(app)
+      .post('/new-post')
+      .set('Cookie', ['sessionId=valid-test-session'])
+      .type('form')
+      .send({ title: 'Jest Integration Post', content: 'Testing post submission' });
 
-    const res = await request(app).delete(`/posts/${created.body.id}`);
-    expect([200, 204]).toContain(res.statusCode);
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe('/');
+  });
+
+  // Test 9: Role-based access control (Non-admin authenticated user)
+  test('9. GET /admin - Should return 403 when authenticated as a non-admin user', async () => {
+    const res = await request(app)
+      .get('/admin')
+      .set('Cookie', ['sessionId=valid-test-session']);
+    expect(res.statusCode).toBe(403);
+    expect(res.text).toContain('Access denied');
+  });
+
+  // Test 10: Role-based access control (Admin authenticated user)
+  test('10. GET /admin - Should return 200 OK when authenticated as admin', async () => {
+    const res = await request(app)
+      .get('/admin')
+      .set('Cookie', ['sessionId=admin-test-session']);
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toMatch(/html/);
   });
 
 });
