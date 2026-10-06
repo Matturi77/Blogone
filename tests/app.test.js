@@ -118,24 +118,27 @@ describe('Blog Application Unit & Integration Tests', () => {
   // auth tests
 
   // Cryptographic check on password hashing 
-  test('11. POST /auth/register - Should store passwords as bcrypt hashes', async () => {
+test('11. POST /auth/register - Should store passwords as bcrypt hashes', async () => {
     const rawPassword = 'SecretPassword123!';
     await request(app)
       .post('/auth/register')
       .type('form')
       .send({ username: 'reg_sec_user', password: rawPassword });
 
-    await new Promise((resolve) => {
+    await new Promise((resolve, reject) => {
       db.get("SELECT password FROM users WHERE username = 'reg_sec_user'", (err, row) => {
-        expect(err).toBeNull();
-        expect(row).toBeDefined();
-        expect(row.password).not.toBe(rawPassword);
-        expect(row.password).toMatch(/^\$2[ab]\$\d{2}\$/);
-        resolve();
+        if (err) return reject(err);
+        try {
+          expect(row).toBeDefined();
+          expect(row.password).not.toBe(rawPassword);
+          expect(row.password).toMatch(/^\$2[ab]\$\d{2}\$/);
+          resolve();
+        } catch (assertionErr) {
+          reject(assertionErr);
+        }
       });
     });
   });
-
 
   // Wrong password
   test('12. POST /auth/login - Should reject invalid password', async () => {
