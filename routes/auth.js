@@ -30,6 +30,8 @@ router.get('/register', (req, res) => {
     res.render('register', { title: 'Register' });
 });
 
+
+
 router.post('/register', (req, res) => {
     const { username, password } = req.body;
     //const hashedPassword = bcrypt.hashSync(password, 10);
@@ -43,8 +45,6 @@ router.post('/register', (req, res) => {
         res.redirect('/auth/login');
     });
 });
-
-
 
 router.get('/logout', (req, res) => {
     res.clearCookie('sessionId');
