@@ -114,9 +114,7 @@ describe('Blog Application Unit & Integration Tests', () => {
     expect(res.statusCode).toBe(200);
   });
 
-});
-
-
+  
 // Test 11: Cryptographic check on password hashing (Catches Defect A)
   test('11. POST /auth/register - Should store passwords as bcrypt hashes, never plaintext', async () => {
     const rawPassword = 'SecretPassword123!';
@@ -206,3 +204,7 @@ describe('Blog Application Unit & Integration Tests', () => {
     expect(res.statusCode).toBe(302);
     expect(res.headers.location).toBe('/auth/login');
   });
+
+});
+
+
