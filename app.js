@@ -54,9 +54,9 @@ app.get('/new-post', (req, res) => {
 });
 
 app.post('/new-post', (req, res) => {
-  if (!req.user) {
-      return res.redirect('/auth/login');
-  }
+  //if (!req.user) {
+  //    return res.redirect('/auth/login');
+  //}
   const { title, content } = req.body;
   db.run("INSERT INTO posts (title, content) VALUES (?, ?)", [title, content], (err) => {
       if (err) throw err;
